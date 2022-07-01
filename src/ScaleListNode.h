@@ -71,17 +71,18 @@ public:
 	static	MObject		name;
 	static	MObject		weight;
 	static	MObject		absolute;
+	static	MObject		scale;
 	static	MObject		scaleX;
 	static	MObject		scaleY;
 	static	MObject		scaleZ;
-	static	MObject		scale;
 	
-	static	MObject		value;
-	static	MObject		valueX;
-	static	MObject		valueY;
-	static	MObject		valueZ;
+	static	MObject		output;
+	static	MObject		outputX;
+	static	MObject		outputY;
+	static	MObject		outputZ;
 	static	MObject		matrix;
-	
+	static	MObject		inverseMatrix;
+
 	static	MTypeId		id;
 	static	MString		listCategory;
 	static	MString		scaleCategory;

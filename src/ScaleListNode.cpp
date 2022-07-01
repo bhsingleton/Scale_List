@@ -19,11 +19,12 @@ MObject		ScaleList::scaleX;
 MObject		ScaleList::scaleY;
 MObject		ScaleList::scaleZ;
 
-MObject		ScaleList::value;
-MObject		ScaleList::valueX;
-MObject		ScaleList::valueY;
-MObject		ScaleList::valueZ;
+MObject		ScaleList::output;
+MObject		ScaleList::outputX;
+MObject		ScaleList::outputY;
+MObject		ScaleList::outputZ;
 MObject		ScaleList::matrix;
+MObject		ScaleList::inverseMatrix;
 
 MTypeId		ScaleList::id(0x0013b1c7);
 MString		ScaleList::listCategory("List");
@@ -78,7 +79,7 @@ Only these values should be used when performing computations!
 		short active = activeHandle.asShort();
 		bool normalizeWeights = normalizeWeightsHandle.asBool();
 		
-		// Collect position entries
+		// Collect scale entries
 		//
 		unsigned int listCount = listHandle.elementCount();
 		std::vector<ScaleListItem> items = std::vector<ScaleListItem>(listCount);
@@ -141,31 +142,37 @@ Only these values should be used when performing computations!
 		
 		// Get output data handles
 		//
-		MDataHandle valueXHandle = data.outputValue(ScaleList::valueX, &status);
+		MDataHandle outputXHandle = data.outputValue(ScaleList::outputX, &status);
 		CHECK_MSTATUS_AND_RETURN_IT(status);
 
-		MDataHandle valueYHandle = data.outputValue(ScaleList::valueY, &status);
+		MDataHandle outputYHandle = data.outputValue(ScaleList::outputY, &status);
 		CHECK_MSTATUS_AND_RETURN_IT(status);
 
-		MDataHandle valueZHandle = data.outputValue(ScaleList::valueZ, &status);
+		MDataHandle outputZHandle = data.outputValue(ScaleList::outputZ, &status);
 		CHECK_MSTATUS_AND_RETURN_IT(status);
 
 		MDataHandle matrixHandle = data.outputValue(ScaleList::matrix, &status);
 		CHECK_MSTATUS_AND_RETURN_IT(status);
 
+		MDataHandle inverseMatrixHandle = data.outputValue(ScaleList::inverseMatrix, &status);
+		CHECK_MSTATUS_AND_RETURN_IT(status);
+
 		// Update output data handles
 		//
-		valueXHandle.setDouble(scale.x);
-		valueXHandle.setClean();
-		
-		valueYHandle.setDouble(scale.y);
-		valueYHandle.setClean();
-		
-		valueZHandle.setDouble(scale.z);
-		valueZHandle.setClean();
+		outputXHandle.setDouble(scale.x);
+		outputXHandle.setClean();
+
+		outputYHandle.setDouble(scale.y);
+		outputYHandle.setClean();
+
+		outputZHandle.setDouble(scale.z);
+		outputZHandle.setClean();
 
 		matrixHandle.setMMatrix(matrix);
 		matrixHandle.setClean();
+
+		inverseMatrixHandle.setMMatrix(matrix.inverse());
+		inverseMatrixHandle.setClean();
 
 		// Mark plug as clean
 		//
@@ -451,36 +458,36 @@ Use this function to define any static attributes.
 	CHECK_MSTATUS(fnCompoundAttr.addToCategory(ScaleList::listCategory));
 
 	// Output attributes:
-	// ".valueX" attribute
+	// ".outputX" attribute
 	//
-	ScaleList::valueX = fnNumericAttr.create("valueX", "vx", MFnNumericData::kDouble, 1.0, &status);
+	ScaleList::outputX = fnNumericAttr.create("outputX", "ox", MFnNumericData::kDouble, 1.0, &status);
 	CHECK_MSTATUS_AND_RETURN_IT(status);
 
 	CHECK_MSTATUS(fnNumericAttr.setWritable(false));
 	CHECK_MSTATUS(fnNumericAttr.setStorable(false));
 	CHECK_MSTATUS(fnNumericAttr.addToCategory(ScaleList::outputCategory));
 
-	// ".valueY" attribute
+	// ".outputY" attribute
 	//
-	ScaleList::valueY = fnNumericAttr.create("valueY", "vy", MFnNumericData::kDouble, 1.0, &status);
+	ScaleList::outputY = fnNumericAttr.create("outputY", "oy", MFnNumericData::kDouble, 1.0, &status);
 	CHECK_MSTATUS_AND_RETURN_IT(status);
 
 	CHECK_MSTATUS(fnNumericAttr.setWritable(false));
 	CHECK_MSTATUS(fnNumericAttr.setStorable(false));
 	CHECK_MSTATUS(fnNumericAttr.addToCategory(ScaleList::outputCategory));
 
-	// ".valueZ" attribute
+	// ".outputZ" attribute
 	//
-	ScaleList::valueZ = fnNumericAttr.create("valueZ", "vz", MFnNumericData::kDouble, 1.0, &status);
+	ScaleList::outputZ = fnNumericAttr.create("outputZ", "oz", MFnNumericData::kDouble, 1.0, &status);
 	CHECK_MSTATUS_AND_RETURN_IT(status);
 
 	CHECK_MSTATUS(fnNumericAttr.setWritable(false));
 	CHECK_MSTATUS(fnNumericAttr.setStorable(false));
 	CHECK_MSTATUS(fnNumericAttr.addToCategory(ScaleList::outputCategory));
 
-	// ".value" attribute
+	// ".output" attribute
 	//
-	ScaleList::value = fnNumericAttr.create("value", "v", ScaleList::valueX, ScaleList::valueY, ScaleList::valueZ, &status);
+	ScaleList::output = fnNumericAttr.create("output", "o", ScaleList::outputX, ScaleList::outputY, ScaleList::outputZ, &status);
 	CHECK_MSTATUS_AND_RETURN_IT(status);
 
 	CHECK_MSTATUS(fnNumericAttr.setWritable(false));
@@ -496,48 +503,61 @@ Use this function to define any static attributes.
 	CHECK_MSTATUS(fnMatrixAttr.setStorable(false));
 	CHECK_MSTATUS(fnMatrixAttr.addToCategory(ScaleList::outputCategory));
 
+	// ".inverseMatrix" attribute
+	//
+	ScaleList::inverseMatrix = fnMatrixAttr.create("inverseMatrix", "im", MFnMatrixAttribute::kDouble, &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	CHECK_MSTATUS(fnMatrixAttr.setWritable(false));
+	CHECK_MSTATUS(fnMatrixAttr.setStorable(false));
+	CHECK_MSTATUS(fnMatrixAttr.addToCategory(ScaleList::outputCategory));
+
+
 	// Add attributes to node
 	//
 	CHECK_MSTATUS(ScaleList::addAttribute(ScaleList::active));
 	CHECK_MSTATUS(ScaleList::addAttribute(ScaleList::normalizeWeights));
 	CHECK_MSTATUS(ScaleList::addAttribute(ScaleList::list));
 
-	CHECK_MSTATUS(ScaleList::addAttribute(ScaleList::value));
+	CHECK_MSTATUS(ScaleList::addAttribute(ScaleList::output));
 	CHECK_MSTATUS(ScaleList::addAttribute(ScaleList::matrix));
+	CHECK_MSTATUS(ScaleList::addAttribute(ScaleList::inverseMatrix));
 
 	// Define attribute relationships
 	//
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::active, ScaleList::valueX));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::normalizeWeights, ScaleList::valueX));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::weight, ScaleList::valueX));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::absolute, ScaleList::valueX));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleX, ScaleList::valueX));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleY, ScaleList::valueX));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleZ, ScaleList::valueX));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::active, ScaleList::outputX));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::normalizeWeights, ScaleList::outputX));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::weight, ScaleList::outputX));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::absolute, ScaleList::outputX));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleX, ScaleList::outputX));
 
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::active, ScaleList::valueY));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::normalizeWeights, ScaleList::valueY));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::weight, ScaleList::valueY));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::absolute, ScaleList::valueY));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleX, ScaleList::valueY));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleY, ScaleList::valueY));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleZ, ScaleList::valueY));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::active, ScaleList::outputY));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::normalizeWeights, ScaleList::outputY));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::weight, ScaleList::outputY));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::absolute, ScaleList::outputY));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleY, ScaleList::outputY));
 
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::active, ScaleList::valueZ));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::normalizeWeights, ScaleList::valueZ));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::weight, ScaleList::valueZ));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::absolute, ScaleList::valueZ));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleX, ScaleList::valueZ));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleY, ScaleList::valueZ));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleZ, ScaleList::valueZ));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::active, ScaleList::outputZ));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::normalizeWeights, ScaleList::outputZ));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::weight, ScaleList::outputZ));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::absolute, ScaleList::outputZ));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleX, ScaleList::outputZ));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleY, ScaleList::outputZ));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleZ, ScaleList::outputZ));
 
 	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::active, ScaleList::matrix));
 	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::normalizeWeights, ScaleList::matrix));
 	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::weight, ScaleList::matrix));
 	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::absolute, ScaleList::matrix));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleX, ScaleList::matrix));
-	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleY, ScaleList::matrix));
 	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleZ, ScaleList::matrix));
+
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::active, ScaleList::inverseMatrix));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::normalizeWeights, ScaleList::inverseMatrix));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::weight, ScaleList::inverseMatrix));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::absolute, ScaleList::inverseMatrix));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleX, ScaleList::inverseMatrix));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleY, ScaleList::inverseMatrix));
+	CHECK_MSTATUS(ScaleList::attributeAffects(ScaleList::scaleZ, ScaleList::inverseMatrix));
 
 	return status;
 
